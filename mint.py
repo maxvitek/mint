@@ -42,6 +42,7 @@ class Mint(object):
         self.session = requests.Session()
 
     def login(self):
+        self.session.cookies.clear()
         headers = {}
         headers["accept"] = "application/json"
         data = {
@@ -52,22 +53,23 @@ class Mint(object):
 
         response = self.session.post(self.LOGIN_URL, data=data, headers=headers)
 
-        if len(response.cookies) < 5:
+        if len(response.cookies) < 4:
             #raise MintCookieException()
             for c in self.session.cookies:
                 if c.name == '_exp_mintPN':
-                    true_path, hidden_cookie = c.path.split(',')
-                    c.path = true_path
-                    new_cookie_name, new_cookie_value = hidden_cookie.split('=')
-                    new_cookie = {}
-                    cookie_attributes = ['version', 'port', 'port_specified', 'domain', \
-                            'domain_specified', 'domain_initial_dot', 'path', 'path_specified', \
-                            'secure', 'expires', 'discard', 'comment', 'comment_url', 'rfc2109']
-                    for attr in cookie_attributes:
-                        new_cookie[attr] = getattr(c, attr)
-                    new_cookie['name'] = 'MINTJSESSIONID'
-                    new_cookie['value'] = new_cookie_value
-                    new_cookie['rest'] = {}
+                    if '=' in c.path:
+                        true_path, hidden_cookie = c.path.split(',')
+                        c.path = true_path
+                        new_cookie_name, new_cookie_value = hidden_cookie.split('=')
+                        new_cookie = {}
+                        cookie_attributes = ['version', 'port', 'port_specified', 'domain', \
+                                'domain_specified', 'domain_initial_dot', 'path', 'path_specified', \
+                                'secure', 'expires', 'discard', 'comment', 'comment_url', 'rfc2109']
+                        for attr in cookie_attributes:
+                            new_cookie[attr] = getattr(c, attr)
+                        new_cookie['name'] = 'MINTJSESSIONID'
+                        new_cookie['value'] = new_cookie_value
+                        new_cookie['rest'] = {}
             new_cookie = cookielib.Cookie(**new_cookie)
             self.session.cookies.set_cookie(new_cookie)
 
@@ -84,7 +86,8 @@ class Mint(object):
     def get_csv(self):
         if not self.token:
             self.login()
-        params = {'queryNew': '', 'offset': '0', 'accountId': '6677642', 'comparableType': '8'}
+        #params = {'queryNew': '', 'offset': '0', 'accountId': '6677642', 'comparableType': '8'}
+        params = {'queryNew': '', 'offset': '0', 'comparableType': '8'}
         response = self.session.get(self.CSV_URL, params=params)
         if 'Perhaps you took a wrong turn' in response.text:
             raise MintWrongTurnException
