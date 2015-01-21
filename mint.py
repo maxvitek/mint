@@ -15,6 +15,9 @@ class MintTokenException(Exception):
 class MintJSONException(Exception):
     pass
 
+class MintWrongTurnException(Exception):
+    pass
+
 
 class Mint(object):
     '''
@@ -84,7 +87,7 @@ class Mint(object):
         params = {'queryNew': '', 'offset': '0', 'accountId': '6677642', 'comparableType': '8'}
         response = self.session.get(self.CSV_URL, params=params)
         if 'Perhaps you took a wrong turn' in response.text:
-            raise Exception('Mint.com hates you')
+            raise MintWrongTurnException
         return response.text
 
 #mint = Mint()
