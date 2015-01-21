@@ -54,10 +54,7 @@ class Mint(object):
         response = self.session.post(self.LOGIN_URL, data=data, headers=headers)
 
         if len(response.cookies) < 4:
-<<<<<<< HEAD
-=======
             #raise MintCookieException()
->>>>>>> 27580192d6f99014b583065c441798fb52619cc1
             for c in self.session.cookies:
                 if c.name == '_exp_mintPN':
                     if '=' in c.path:
