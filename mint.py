@@ -73,8 +73,8 @@ class Mint(object):
                         new_cookie['name'] = 'MINTJSESSIONID'
                         new_cookie['value'] = new_cookie_value
                         new_cookie['rest'] = {}
-            new_cookie = cookielib.Cookie(**new_cookie)
-            self.session.cookies.set_cookie(new_cookie)
+                        new_cookie = cookielib.Cookie(**new_cookie)
+                        self.session.cookies.set_cookie(new_cookie)
 
         if 'token' not in response.text:
             raise MintTokenException()
