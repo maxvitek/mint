@@ -5,6 +5,16 @@ import csv
 import StringIO
 
 
+class MintCookieException(Exception):
+    pass
+
+class MintTokenException(Exception):
+    pass
+
+class MintJSONException(Exception):
+    pass
+
+
 class Mint(object):
     '''
     mint.com interface
@@ -37,13 +47,16 @@ class Mint(object):
                 }
 
         response = self.session.post(self.LOGIN_URL, data=data, headers=headers)
-        
+
+        if len(response.cookies) < 5:
+            raise MintCookieException()
+
         if 'token' not in response.text:
-            raise Exception("Mint.com login failed[1]")
+            raise MintTokenException()
 
         resjson = json.loads(response.text)
         if not resjson["sUser"]["token"]:
-            raise Exception("Mint.com login failed[2]")
+            raise MintJSONException
         else:
             self.token = resjson["sUser"]["token"]
         return response
