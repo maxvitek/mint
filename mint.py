@@ -3,6 +3,7 @@ import requests
 import json
 import csv
 import StringIO
+import cookielib
 
 
 class MintCookieException(Exception):
@@ -49,7 +50,23 @@ class Mint(object):
         response = self.session.post(self.LOGIN_URL, data=data, headers=headers)
 
         if len(response.cookies) < 5:
-            raise MintCookieException()
+            #raise MintCookieException()
+            for c in self.session.cookies:
+                if c.name == '_exp_mintPN':
+                    true_path, hidden_cookie = c.path.split(',')
+                    c.path = true_path
+                    new_cookie_name, new_cookie_value = hidden_cookie.split('=')
+                    new_cookie = {}
+                    cookie_attributes = ['version', 'port', 'port_specified', 'domain', \
+                            'domain_specified', 'domain_initial_dot', 'path', 'path_specified', \
+                            'secure', 'expires', 'discard', 'comment', 'comment_url', 'rfc2109']
+                    for attr in cookie_attributes:
+                        new_cookie[attr] = getattr(c, attr)
+                    new_cookie['name'] = 'MINTJSESSIONID'
+                    new_cookie['value'] = new_cookie_value
+                    new_cookie['rest'] = {}
+            new_cookie = cookielib.Cookie(**new_cookie)
+            self.session.cookies.set_cookie(new_cookie)
 
         if 'token' not in response.text:
             raise MintTokenException()
