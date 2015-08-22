@@ -96,7 +96,6 @@ class Mint(object):
     def get_csv(self):
         if not self.token:
             self.login()
-        #params = {'queryNew': '', 'offset': '0', 'accountId': '6677642', 'comparableType': '8'}
         params = {'queryNew': '', 'offset': '0', 'comparableType': '8'}
         response = self.session.get(self.CSV_URL, params=params)
         if 'Perhaps you took a wrong turn' in response.text:
