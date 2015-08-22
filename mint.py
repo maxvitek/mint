@@ -4,6 +4,7 @@ import json
 import csv
 import StringIO
 import cookielib
+import datetime
 
 
 class MintCookieException(Exception):
@@ -26,6 +27,8 @@ class Mint(object):
     BASE_URL  = 'https://wwws.mint.com'
     LOGIN_URL = '{0}/loginUserSubmit.xevent'.format(BASE_URL)
     CSV_URL   = '{0}/transactionDownload.event'.format(BASE_URL)
+    ACCOUNT_URL = '{0}/bundledServiceController.xevent'.format(BASE_URL)
+    DATE_FIELDS = ['addAccountDate', 'closeDate', 'fiLastUpdated', 'lastUpdated',]
 
     def __init__(self, username=None, password=None):
         if not username or not password:
@@ -40,6 +43,7 @@ class Mint(object):
             self.password = self.config['password']
         self.token = None
         self.session = requests.Session()
+        self.request_id = 42  # magic
 
     def login(self):
         self.session.cookies.clear()
@@ -69,7 +73,13 @@ class Mint(object):
                             new_cookie[attr] = getattr(c, attr)
                         new_cookie['name'] = 'MINTJSESSIONID'
                         new_cookie['value'] = new_cookie_value
-                        new_cookie['rest'] = {}
+                        new_cookie['rest'] = {'HttpOnly': None}
+                        new_cookie['domain'] = 'wwws.mint.com'
+                        new_cookie['domain_specified'] = False
+                        new_cookie['domain_initial_dot'] = False
+                        new_cookie['expires'] = None
+                        new_cookie['discard'] = True
+                        new_cookie['rfc2109'] = False
                         new_cookie = cookielib.Cookie(**new_cookie)
                         self.session.cookies.set_cookie(new_cookie)
 
@@ -93,5 +103,51 @@ class Mint(object):
             raise MintWrongTurnException
         return response.text
 
+    def get_accounts(self):
+        headers = {}
+        headers["accept"] = "application/json"
+        req_id = str(self.request_id)
+        data = {"input": json.dumps([
+            {"args": {
+                "types": [
+                    "BANK", 
+                    "CREDIT", 
+                    "INVESTMENT", 
+                    "LOAN", 
+                    "MORTGAGE", 
+                    "OTHER_PROPERTY", 
+                    "REAL_ESTATE", 
+                    "VEHICLE", 
+                    "UNCLASSIFIED"
+                ]
+            }, 
+            "id": req_id, 
+            "service": "MintAccountService", 
+            "task": "getAccountsSorted"
+            }
+        ])}
+        params = {'legacy': 'false', 'token': self.token}
+        response = self.session.post(self.ACCOUNT_URL, params=params, data=data, headers=headers)
+        self.request_id = self.request_id + 1
+        if req_id not in response.text:
+            raise Exception("Could not parse account data: " + response.text)
+
+        # Parse the request
+        response = json.loads(response.text)
+        accounts = response["response"][req_id]["response"]
+
+        # Return datetime objects for dates
+        for account in accounts:
+            for df in self.DATE_FIELDS:
+                if df in account:
+                    # Convert from javascript timestamp to unix timestamp
+                    # http://stackoverflow.com/a/9744811/5026
+                    try:
+                        ts = account[df] / 1e3
+                    except TypeError:
+                        # returned data is not a number, don't parse
+                        continue
+                    account[df + u'InDate'] = datetime.datetime.fromtimestamp(ts)
+        return accounts
 #mint = Mint()
 #mint.get_csv()
