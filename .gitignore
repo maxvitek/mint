@@ -1,2 +1,4 @@
 *~
 *.pyc
+local_config.yaml
+.python-version

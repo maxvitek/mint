@@ -5,6 +5,7 @@ import csv
 import StringIO
 import cookielib
 import datetime
+import click
 
 
 class MintCookieException(Exception):
@@ -30,9 +31,11 @@ class Mint(object):
     ACCOUNT_URL = '{0}/bundledServiceController.xevent'.format(BASE_URL)
     DATE_FIELDS = ['addAccountDate', 'closeDate', 'fiLastUpdated', 'lastUpdated',]
 
-    def __init__(self, username=None, password=None):
-        if not username or not password:
+    def __init__(self, username=None, password=None, config=None):
+        if ( not username or not password ) and not config:
             self.config = yaml.load(open('config.yaml', 'r'))
+        if not username or not password:
+            self.config = yaml.load(open(config, 'r'))
         if username:
             self.username = username
         else:
@@ -148,5 +151,13 @@ class Mint(object):
                         continue
                     account[df + u'InDate'] = datetime.datetime.fromtimestamp(ts)
         return accounts
-#mint = Mint()
-#mint.get_csv()
+
+@click.option('--config', default='config.yaml')
+@click.command()
+def main(config):
+    mint = Mint(config=config)
+    print mint.get_csv()
+
+
+if __name__ == '__main__':
+    main()
